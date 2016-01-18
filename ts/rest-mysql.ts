@@ -37,6 +37,12 @@ export class Rest {
     _.extendOwn(this.options, option);
     Date['masks']['default'] = this.options.timeFormat;
     this.conn = mysql.createConnection(this.options.mysql);
+    setInterval(()=>{
+      this.conn.query('select 1', (err,rows)=>{
+        if (err) throw err;
+        console.log('heart beat to mysql');
+      })
+    }, 120*1000);
     let table = this.options.api + 'table';
     console.log('table is at: ', table);
     this.app
