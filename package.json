@@ -8,7 +8,10 @@
     "dongfuye ye <dongfuye@163.com"
   ],
   "license": "MIT",
-  "repository": "https://github.com/yedf/rest-mysql.git",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yedf/rest-mysql.git"
+  },
   "keywords": [
     "rest",
     "mysql",
