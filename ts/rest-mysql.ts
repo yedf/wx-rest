@@ -274,7 +274,7 @@ function buildCond(id, query, table) {
   for (var f in table) {
     if (table.hasOwnProperty(f) && query.hasOwnProperty(f)) {
       let qf = quoteValue(query[f], table[f]);
-      cond = ` and ${f}=${qf}`;
+      cond += ` and ${f}=${qf}`;
     }
   }
   return cond && cond.slice(4) || '';
