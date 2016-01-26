@@ -30,6 +30,7 @@ export class Rest {
     proxy: {
       //'/call_proxy': 'http://localhost/call-proxy'
     },
+    bodyOption: {limit: '50mb'},
     verbose: true,
   };
 
@@ -48,7 +49,7 @@ export class Rest {
     this.app
       .use(require('connect-timeout')('8s'))
       //.use(parser.raw({type: '*/*'}))
-      .use(parser.json())
+      .use(parser.json(this.options.bodyOption))
       .use(parser.urlencoded({ extended: true }))
       .get(this.options.api + 'ping', (req:express.Request, res:express.Response) => {
         res.header("Content-Type", "application/json");
@@ -180,15 +181,18 @@ export class Rest {
     if (req.method == 'GET') {
       let order = query.order_ ? " order by " + query.order_ : "";
       let start = query.start_ || 0;
-      let limit = query.limit_ || query.op_ == 'count' && 10000 || 100;
+      let limit = query.limit_ || 100;
       let sql = "select * from " + table + where + order + " limit " + start + "," + limit;
+      if (query.op_ == 'count') {
+        sql = "select count(1) a from "+table+where;
+      }
       let rows:any[] = await this.query(sql);
       if (id && rows.length == 0) {
         return Promise.reject(['', 404]);
       }
       let r:any = rows;
       if (query.op_ == 'count') {
-        r = {count: rows.length};
+        r = {count: rows[0]['a']};
       } else if (id) {
         r = rows[0];
       }
