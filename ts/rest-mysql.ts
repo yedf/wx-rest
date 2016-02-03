@@ -1,12 +1,13 @@
 'use strict';
 
 import express = require('express');
+import {Request,Response} from 'express';
 import mysql = require("mysql");
 import _ = require("underscore");
 var parser = require('body-parser');
-var proxy = require('proxy-middleware')
 require("date-format-lite");
 require('debug-trace')();
+var proxy = require('express-http-proxy');
 
 console['format'] = function(c) { return c.date + ": " + require('path').basename(c.filename) + ":" + c.getLineNumber(); };
 
@@ -48,20 +49,23 @@ export class Rest {
     let table = this.options.api + 'table';
     console.log('table is at: ', table);
     this.app
+      .use(require('morgan')('dev'))
       .use(require('connect-timeout')('8s'))
-      //.use(parser.raw({type: '*/*'}))
-      .use(parser.json(this.options.bodyOption))
+    for (let k in this.options.proxy) {
+      let v = this.options.proxy[k];
+      console.log('proxying: ', k, ' to: ', v);
+      this.app.use(k, proxy(v, {
+        forwardPath: (req,res)=>{ console.log('proxying: ', k+req.url, ' => ', v); return k+req.url;}
+      }));
+    }
+    //.use(parser.raw({type: '*/*'}))
+    this.app.use(parser.json(this.options.bodyOption))
       .use(parser.urlencoded({ extended: true }))
       .get(this.options.api + 'ping', (req:express.Request, res:express.Response) => {
         res.header("Content-Type", "application/json");
         res.send('true');
-      });
-    for (let k in this.options.proxy) {
-      let v = this.options.proxy[k];
-      console.log('proxying: ', k, ' to: ', v);
-      this.app.use(k, proxy(v));
-    }
-    this.app.all(table + '/:table/:id', this.handle)
+      })
+      .all(table + '/:table/:id', this.handle)
       .all(table + '/:table', this.handle);
     if (this.options.call) {
       console.log(`call is at ${this.options.api}call for ${this.options.call}`);
@@ -91,7 +95,7 @@ export class Rest {
     this.app.use((err, req: express.Request, res: express.Response, next)=> {
       console.error(err.stack);
       console.log(`timedout: ${req.method} ${req.url} ${JSON.stringify(req.query)} body: ` + JSON.stringify(req['jbody'] || null));
-      res.send(500, {message: 'request timeout'});
+      res.status(500).send({message: 'request timeout'});
     });
   }
 
