@@ -37,6 +37,7 @@ export class Rest {
   constructor(option?:any) {
     _.extendOwn(this.options, option);
     Date['masks']['default'] = this.options.timeFormat;
+    console.log('connecting to mysql: ', this.options.mysql);
     this.conn = mysql.createConnection(this.options.mysql);
     setInterval(()=>{
       this.conn.query('select 1', (err,rows)=>{
@@ -66,6 +67,7 @@ export class Rest {
       console.log(`call is at ${this.options.api}call for ${this.options.call}`);
       this.app.all(this.options.api+'call/:file/:method', (req: express.Request, res: express.Response) => {
         addJbody(req);
+        console.log(`${req.method} ${req.url} ${JSON.stringify(req.query)} body: ` + JSON.stringify(req['jbody'] || null));
         var module1 = require(`${this.options.call}/${req.params.file}.js`);
         this.outputPromise(res, module1[req.params.method](req, res, this));
       });
@@ -86,6 +88,11 @@ export class Rest {
       console.log('raw is: ', this.options.raw);
       require(this.options.raw)(this);
     }
+    this.app.use((err, req: express.Request, res: express.Response, next)=> {
+      console.error(err.stack);
+      console.log(`timedout: ${req.method} ${req.url} ${JSON.stringify(req.query)} body: ` + JSON.stringify(req['jbody'] || null));
+      res.send(500, {message: 'request timeout'});
+    });
   }
 
   query = async (sql:string):Promise<any> => {
@@ -143,11 +150,9 @@ export class Rest {
   };
   handle = (req:express.Request, res:express.Response):void => {
     try {
-      var table = req.params.table;
       addJbody(req);
-      if (this.options.verbose) {
-        console.log(`${req.method} ${req.url} ${JSON.stringify(req.query)} body: ` + JSON.stringify(req['jbody'] || null));
-      }
+      console.log(`${req.method} ${req.url} ${JSON.stringify(req.query)} body: ` + JSON.stringify(req['jbody'] || null));
+      var table = req.params.table;
       if (table in this.custom && req.method in this.custom[table] && !req.query.op_) {
         this.outputPromise(res, this.custom[table][req.method](req, res, this));
         return;
