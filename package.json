@@ -1,7 +1,7 @@
 {
     "name": "rest-mysql",
     "description": "a simple rest server for mysql",
-    "version": "1.0.13",
+    "version": "1.0.14",
     "typings": "js/rest-mysql",
     "author": "dongfuye ye <dongfuye@163.com",
     "contributors": [

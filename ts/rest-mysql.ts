@@ -55,14 +55,14 @@ export class Rest {
       .get(this.options.api + 'ping', (req:express.Request, res:express.Response) => {
         res.header("Content-Type", "application/json");
         res.send('true');
-      })
-      .all(table + '/:table/:id', this.handle)
-      .all(table + '/:table', this.handle);
+      });
     for (let k in this.options.proxy) {
       let v = this.options.proxy[k];
       console.log('proxying: ', k, ' to: ', v);
       this.app.use(k, proxy(v));
     }
+    this.app.all(table + '/:table/:id', this.handle)
+      .all(table + '/:table', this.handle);
     if (this.options.call) {
       console.log(`call is at ${this.options.api}call for ${this.options.call}`);
       this.app.all(this.options.api+'call/:file/:method', (req: express.Request, res: express.Response) => {
