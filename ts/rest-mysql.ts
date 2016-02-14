@@ -11,6 +11,13 @@ var proxy = require('express-http-proxy');
 
 console['format'] = function(c) { return c.date + ": " + require('path').basename(c.filename) + ":" + c.getLineNumber(); };
 
+function printable(body:any) {
+  if (!body) return null;
+  let s = JSON.stringify(body);
+  if (s.length > 10*1024) return ` ... ${s.length} bytes`;
+  return s;
+}
+
 export function create(option?:any):Rest {
   return new Rest(option);
 }
@@ -71,7 +78,7 @@ export class Rest {
       console.log(`call is at ${this.options.api}call for ${this.options.call}`);
       this.app.all(this.options.api+'call/:file/:method', (req: express.Request, res: express.Response) => {
         addJbody(req);
-        console.log(`${req.method} ${req.url} ${JSON.stringify(req.query)} body: ` + JSON.stringify(req['jbody'] || null));
+        console.log(`${req.method} ${req.url} ${JSON.stringify(req.query)} body: ` + printable(req['jbody']));
         var module1 = require(`${this.options.call}/${req.params.file}.js`);
         this.outputPromise(res, module1[req.params.method](req, res, this));
       });
@@ -94,7 +101,7 @@ export class Rest {
     }
     this.app.use((err, req: express.Request, res: express.Response, next)=> {
       console.error(err.stack);
-      console.log(`timedout: ${req.method} ${req.url} ${JSON.stringify(req.query)} body: ` + JSON.stringify(req['jbody'] || null));
+      console.log(`timedout: ${req.method} ${req.url} ${JSON.stringify(req.query)} body: ` + printable(req['jbody']));
       res.status(500).send({message: 'request timeout'});
     });
   }
@@ -136,7 +143,7 @@ export class Rest {
     }
     if (this.options.verbose || status != 200) {
       let req:express.Request = res['req'];
-      console.log(`${req.method} ${req.url} ${JSON.stringify(req.query)} body: ` + JSON.stringify(req['jbody'] || null));
+      console.log(`${req.method} ${req.url} ${JSON.stringify(req.query)} body: ` + printable(req['jbody']));
       console.log(' status: ', status, ' result: ', cont);
     }
     res.status(status).send(cont);
@@ -155,7 +162,7 @@ export class Rest {
   handle = (req:express.Request, res:express.Response):void => {
     try {
       addJbody(req);
-      console.log(`${req.method} ${req.url} ${JSON.stringify(req.query)} body: ` + JSON.stringify(req['jbody'] || null));
+      console.log(`${req.method} ${req.url} ${JSON.stringify(req.query)} body: ` + printable(req['jbody']));
       var table = req.params.table;
       if (table in this.custom && req.method in this.custom[table] && !req.query.op_) {
         this.outputPromise(res, this.custom[table][req.method](req, res, this));
