@@ -36,13 +36,19 @@ export class Rest {
     www: '', // web root for static
     call: '', // handle file/method request
     proxy: {
-      //'/call_proxy': 'http://localhost/call-proxy'
+      //'/call_proxy': 'www.example.com'
     },
     bodyOption: {limit: '50mb'},
     verbose: true,
   };
 
   constructor(option?:any) {
+    if (option.dir) {
+      this.options.www = option.dir + '/../../www';
+      this.options.custom = option.dir + '/custom';
+      this.options.raw = option.dir + '/raw';
+      this.options.call = option.dir + '/call';      
+    }
     _.extendOwn(this.options, option);
     Date['masks']['default'] = this.options.timeFormat;
     console.log('connecting to mysql: ', this.options.mysql);
