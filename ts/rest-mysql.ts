@@ -63,7 +63,7 @@ export class Rest {
     console.log('table is at: ', table);
     this.app
       .use(require('morgan')('dev'))
-      .use(require('connect-timeout')('8s'))
+      .use(require('connect-timeout')('20s'))
     for (let k in this.options.proxy) {
       let v = this.options.proxy[k];
       console.log('proxying: ', k, ' to: ', v);
