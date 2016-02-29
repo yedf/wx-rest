@@ -58,16 +58,17 @@ export async function postForm(url, formData) {
 
 export function base64(img:string):boolean { return img && img.startsWith('data:'); }
 export function base64Buffer(img:string): Buffer {
-  let regex = /^data:.+\/(.+);base64,(.*)$/;
-  let matches = img.match(regex);
-  return new Buffer(matches[2], 'base64');
+  let pat = 'base64,'
+  let pos = img.indexOf(pat);
+  return new Buffer(img.slice(pos+pat.length), 'base64');
 }
 export function base64Ext(img:string) {
   let regex = /^data:.+\/(.+);base64,(.*)$/;
-  let matches = img.match(regex);
+  let matches = img.slice(0,30).match(regex);
   return matches[1];
 }
 export function base64Save(img: string, filename:string) {
+  console.log('begin saving base64');
   let buffer = this.base64Buffer(img);
   console.log('writing to file ', filename, ' bytes: ', buffer.length);
   fs.writeFileSync(filename, buffer);

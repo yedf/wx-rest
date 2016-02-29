@@ -1,7 +1,7 @@
 {
     "name": "wx-rest",
     "description": "a simple rest server for wx",
-    "version": "1.0.5",
+    "version": "1.0.7",
     "typings": "js/index",
     "author": "dongfuye ye <dongfuye@163.com",
     "contributors": [

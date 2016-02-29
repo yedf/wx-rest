@@ -4,7 +4,7 @@ import express = require('express');
 import {Request,Response} from 'express';
 import mysql = require("mysql");
 import _ = require("underscore");
-var parser = require('body-parser');
+var parser:any = require('body-parser');
 require("date-format-lite");
 require('debug-trace')();
 var proxy = require('express-http-proxy');
@@ -279,7 +279,7 @@ export class Rest {
         let camelTable = underscore2Camel(tname);
         let pri = pris.length == 1 ? pris[0] : '';
         var id_part = pri ? ":"+pri+"',{ " + pri + ":'@"+pri+"'}" : "'";
-        ngCont += `.factory('${camelTable}', function($resource){ return $resource('${this.options.api}table/${cs[i]}/${id_part});})\n`;
+        ngCont += `.factory('${camelTable}', ['$resource',function($resource){ return $resource('${this.options.api}table/${cs[i]}/${id_part});}])\n`;
       }
       require('fs').writeFileSync(filename, ngCont);
       console.log('write result finished:', filename);
