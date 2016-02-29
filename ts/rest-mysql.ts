@@ -72,7 +72,7 @@ export class Rest {
       }));
     }
     //.use(parser.raw({type: '*/*'}))
-    this.app.use(parser.json(this.options.bodyOption))
+    this.app.use(parser['json'](this.options.bodyOption))
       .use(parser.urlencoded({ extended: true }))
       .get(this.options.api + 'ping', (req:express.Request, res:express.Response) => {
         res.header("Content-Type", "application/json");
