@@ -2,6 +2,7 @@
 'use strict';
 
 import {Rest} from './rest-mysql';
+import {Request,Response} from 'express';
 import * as fs from 'fs';
 var request = require('request');
 import * as express from 'express';
@@ -19,7 +20,7 @@ export class WxRest extends Rest {
       let code = req.query.code;
       let state = req.query.state; //state=epeijing.cn/app/ /tab/try
       state = state.replace(' ', '#');
-      let tr = await util.jget(`https://api.weixin.qq.com/sns/oauth2/access_token?appid=${config.app_id}&secret=${config.app_secret}&grant_type=authorization_code&code=${code}`);
+      let tr:any = await util.jget(`https://api.weixin.qq.com/sns/oauth2/access_token?appid=${config.app_id}&secret=${config.app_secret}&grant_type=authorization_code&code=${code}`);
       console.log(`oauth token. code: ${code} state: ${state} openid: ${tr.openid}`);
       let userinfo = await util.jget(`https://api.weixin.qq.com/sns/userinfo?access_token=${tr.access_token}&openid=${tr.openid}&lang=zh_CN`);
       let info = encodeURI(JSON.stringify(userinfo));
@@ -31,6 +32,14 @@ export class WxRest extends Rest {
     .get('/api/wx/weixin_token', async function(req, res) {
       let token = await that.getWeixinToken();
       res.send({token:token});
+    })
+    .get('/api/wx/weixin_image', async function (req:Request,res:Response) {
+      let id = req.query.id;
+      let token = await that.getWeixinToken();
+      let url = `http://file.api.weixin.qq.com/cgi-bin/media/get?access_token=${token}&media_id=${id}`;
+      console.log(`downloading weixin: ${url}`);
+      let body:any = await util.getRaw(url);
+      res.contentType('image/jpeg').end(body,'binary');
     })
     .get('/api/wx/weixin_ticket', async function(req, res) {
       let ticket = await that.getWeixinTicket();
@@ -44,7 +53,7 @@ export class WxRest extends Rest {
   }
   async cacheSet  (key, value, expire) {
     await this.query(`delete from n_cache where key1='${key}' and expire < unix_timestamp()`);
-    await this.query(`insert into n_cache(key1, value1, expire) values('${key}', '${value}', unix_timestamp()+${expire})`);
+    await this.query(`insert into n_cache(key1, value1, expire, create_time) values('${key}', '${value}', unix_timestamp()+${expire}, now())`);
   }
   async cacheGet (key) {
     let sql = `select value1 from n_cache where key1='${key}' and expire > unix_timestamp() limit 1`;
@@ -57,8 +66,8 @@ export class WxRest extends Rest {
   }
   async getWeixinToken () {
     if (!process.env.PRODUCT) {
-      let r = await util.jget(`http://${this.config.product_host}/api/wx/weixin_token"`);
-      console.log(`weixin token get: ${r}`);
+      let r:any = await util.jget(`http://${this.config.product_host}/api/wx/weixin_token`);
+      console.log(`weixin token get: `,r);
       return r.token;
     }
     let token = await this.cacheGet(`weixin-token`);
@@ -68,7 +77,7 @@ export class WxRest extends Rest {
     let app_id = this.config.app_id;
     let app_secret = this.config.app_secret;
     let url = `https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=${app_id}&secret=${app_secret}`;
-    let get_res =  await util.jget(url);
+    let get_res:any =  await util.jget(url);
     console.log(`weixin get token: app_id: ${app_id} result: ${get_res}`);
     let weixin_token = get_res.access_token;
     await this.cacheSet( `weixin-token`, weixin_token, 7000);
@@ -76,7 +85,7 @@ export class WxRest extends Rest {
   }
   async getWeixinTicket () {
     if (!process.env.PRODUCT) {
-      let r = await util.jget(`http://${this.config.product_host}/api/wx/weixin_ticket`);
+      let r:any = await util.jget(`http://${this.config.product_host}/api/wx/weixin_ticket`);
       console.log(`weixin token get: ${r}`);
       return r.ticket;
     }
@@ -87,7 +96,7 @@ export class WxRest extends Rest {
     }
     let token = await this.getWeixinToken();
     let url = `https://api.weixin.qq.com/cgi-bin/ticket/getticket?access_token=${token}&type=jsapi`;
-    let get_res = await util.jget(url);
+    let get_res:any = await util.jget(url);
     ticket = get_res.ticket;
     console.log('new tickect ',ticket)
     await this.cacheSet( "weixin-ticket", ticket, 7000);
@@ -96,7 +105,7 @@ export class WxRest extends Rest {
   async sendTemplateMsg(msg) {
     let token = await this.getWeixinToken();
     let purl = 'https://api.weixin.qq.com/cgi-bin/message/template/send?access_token='+token;
-    let phr = await util.jpost(purl, msg);
+    let phr:any = await util.jpost(purl, msg);
     console.log(`send weixin msg: ${purl} `, msg, phr);
     return phr.errcode == 0;
   }

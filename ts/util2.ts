@@ -69,7 +69,7 @@ export function base64Ext(img:string) {
 }
 export function base64Save(img: string, filename:string) {
   console.log('begin saving base64');
-  let buffer = this.base64Buffer(img);
+  let buffer = base64Buffer(img);
   console.log('writing to file ', filename, ' bytes: ', buffer.length);
   fs.writeFileSync(filename, buffer);
 }
