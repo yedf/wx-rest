@@ -171,9 +171,11 @@ export class Rest {
       addJbody(req);
       console.log(`${req.method} ${req.url} ${JSON.stringify(req.query)} body: ` + printable(req['jbody']));
       var table = req.params.table;
+      if ('op_' in req.query && table in this.custom && 'op_' in this.custom[table]) {
+        return this.outputPromise(res, this.custom[table].op_(req, res, this));
+      }
       if (table in this.custom && req.method in this.custom[table]) {
-        this.outputPromise(res, this.custom[table][req.method](req, res, this));
-        return;
+        return this.outputPromise(res, this.custom[table][req.method](req, res, this));
       }
       this.outputPromise(res, this.handleDefault(req));
     } catch (e) {
