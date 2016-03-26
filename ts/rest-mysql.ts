@@ -8,6 +8,7 @@ var parser:any = require('body-parser');
 require("date-format-lite");
 require('debug-trace')();
 var proxy = require('express-http-proxy');
+import * as util2 from './util2';
 
 console['format'] = function(c) { return c.date + ": " + require('path').basename(c.filename) + ":" + c.getLineNumber(); };
 
@@ -289,7 +290,9 @@ export class Rest {
 
 function quoteValue(value, type) {
   if (value == null) return 'null';
-  return type.search('char') >= 0 || type.search('date') >= 0 ? "'" + value + "'" : value;
+  let qv = util2.mysql_real_escape_string(value);
+  console.log(`value: ${value} after quote: ${qv}`)
+  return type.search('char') >= 0 || type.search('date') >= 0 ? "'" + qv + "'" : qv;
 }
 
 function buildCond(id, query, table) {
