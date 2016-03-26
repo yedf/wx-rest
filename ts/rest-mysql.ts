@@ -4,6 +4,7 @@ import express = require('express');
 import {Request,Response} from 'express';
 import mysql = require("mysql");
 import _ = require("underscore");
+import * as fs from 'fs';
 var parser:any = require('body-parser');
 require("date-format-lite");
 require('debug-trace')();
@@ -106,8 +107,8 @@ export class Rest {
       console.log('raw is: ', this.options.raw);
       require(this.options.raw)(this);
     }
-    this.app.use((err, req: express.Request, res: express.Response, next)=> {
-      console.error(err.stack);
+    this.app.use((err:Error, req: express.Request, res: express.Response, next)=> {
+      outputError(err);
       console.log(`timedout: ${req.method} ${req.url} ${JSON.stringify(req.query)} body: ` + printable(req['jbody']));
       res.status(500).send({message: 'request timeout'});
     });
@@ -142,7 +143,8 @@ export class Rest {
   };
   outputResult = (res:express.Response, cont:any, status?:number):void => {
     status = status || 200;
-    (status / 100 != 2) && console.log('\n', cont.stack || cont);
+    if (cont.stack) outputError(cont);
+    else if (status / 100 != 2) console.log('\n', cont);
 
     if (typeof cont != 'string') {
       res.header("Content-Type", "application/json");
@@ -354,5 +356,23 @@ function addJbody(req) {
   if (req.body) {
     req['jbody'] = req.body instanceof Buffer ? JSON.parse(req.body) : req.body;
   }
+}
+
+function outputError(err){
+  let reg = /\((.*):(.*):.*\)/;
+  let matches = err.stack.match(reg);
+  if (matches) {
+    let file = matches[1];
+    let line = parseInt(matches[2]);
+    let lns = fs.readFileSync(file).toString('utf8').split('\n', 1000000);
+    for(let l=line-4; l<line+5; l++) {
+      let sl = l.toString();
+      while (sl.length < 5) {
+        sl = '0' + sl;
+      }
+      if (l-1 in lns) console.log(`${l==line?'*':' '}${sl} ${lns[l-1]}`);
+    }
+  }
+  console.error(err.stack);
 }
 
