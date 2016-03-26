@@ -174,7 +174,7 @@ export class Rest {
       if ('op_' in req.query && table in this.custom && 'op_' in this.custom[table]) {
         return this.outputPromise(res, this.custom[table].op_(req, res, this));
       }
-      if (table in this.custom && req.method in this.custom[table]) {
+      if (table in this.custom && req.method in this.custom[table] && !req.query.op_) {
         return this.outputPromise(res, this.custom[table][req.method](req, res, this));
       }
       this.outputPromise(res, this.handleDefault(req));
