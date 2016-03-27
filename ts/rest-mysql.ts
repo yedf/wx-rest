@@ -358,10 +358,10 @@ function addJbody(req) {
 }
 
 function outputError(err){
-  let reg = /\((.*):(.*):.*\)/;
+  let reg = /\/(.*?):(.*?):.*?/;
   let matches = err.stack.match(reg);
   if (matches) {
-    let file = matches[1];
+    let file = '/'+matches[1];
     let line = parseInt(matches[2]);
     let lns = fs.readFileSync(file).toString('utf8').split('\n', 1000000);
     for(let l=line-4; l<line+5; l++) {
