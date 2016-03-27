@@ -8,6 +8,7 @@ import * as _ from 'underscore';
 
 export async function get(url) {
   return new Promise(function(resolve, reject) {
+    console.log(`getting ${url}`);
     request(url, function(err, response, body) {
       console.log(`get ${url} body: ${body}`);
       err && reject(err) || resolve(body);
@@ -17,6 +18,7 @@ export async function get(url) {
 export async function getRaw(url) {
   return new Promise(function(resolve, reject) {
     let data = '';
+    console.log(`getting raw ${url}`);
     request(url).on('response', (response)=>{
       response.setEncoding('binary');
       response.on('data', chunk=>{
@@ -37,6 +39,7 @@ export async function jpost(url,data) {
 }
 export async function post(url, data) {
   return new Promise(function(resolve, reject) {
+    console.log(`posting raw ${url} data length: ${data.length}`);
     request({
       url: url,
       method: 'POST',
@@ -49,6 +52,7 @@ export async function post(url, data) {
 }
 export async function postForm(url, formData) {
   return new Promise((resolve,reject) => {
+    console.log(`posting ${url} form: ${JSON.stringify(formData)}`);
       request.post({url:url,formData:formData}, (err,response,body)=> {
           console.log(`post ${url} body ${JSON.stringify(formData)} err ${err} body ${body}`);
           err && reject(err) || resolve(body);
@@ -136,6 +140,7 @@ export function ascSign(obj, key:string) {
   return s;
 }
 export function mysql_real_escape_string (str) {
+  if (typeof str != 'string') return str;
   return str.replace(/[\0\x08\x09\x1a\n\r"'\\\%]/g, function (char) {
     switch (char) {
       case "\0":

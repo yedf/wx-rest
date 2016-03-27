@@ -295,7 +295,6 @@ export class Rest {
 function quoteValue(value, type) {
   if (value == null) return 'null';
   let qv = util2.mysql_real_escape_string(value);
-  console.log(`value: ${value} after quote: ${qv}`)
   return type.search('char') >= 0 || type.search('date') >= 0 ? "'" + qv + "'" : qv;
 }
 
