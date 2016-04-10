@@ -50,6 +50,16 @@ export async function post(url, data) {
     });
   });
 }
+export async function eachResult(result, cb) {
+  if (_.isArray(result)) {
+    for (let i in result) {
+      await cb(result[i], i);
+    }
+  } else {
+    await cb(result, 0);
+  }
+}
+
 export async function postForm(url, formData) {
   return new Promise((resolve,reject) => {
     console.log(`posting ${url} form: ${JSON.stringify(formData)}`);
