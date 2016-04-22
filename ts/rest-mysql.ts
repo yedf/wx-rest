@@ -114,10 +114,11 @@ export class Rest {
     });
   }
 
-  query = async (sql:string):Promise<any> => {
-    console.log('querying: ', sql);
+  query = async (sql:string, args?:any):Promise<any> => {
+    if (!_.isArray(args)) args = _.isUndefined(args) ? [] : [args];
+    console.log('querying: ', sql, '  ', args.length?args:'');
     return new Promise((resolve, reject) => {
-      this.conn.query(sql, function (err, rows) {
+      this.conn.query(sql, args, function (err, rows) {
         if (err) {
           if (err.code == 'PROTOCOL_ENQUEUE_AFTER_FATAL_ERROR' || err.fatal)
             throw err;
@@ -129,16 +130,16 @@ export class Rest {
       })
     });
   };
-  queryOne = async (sql:string):Promise<any> => {
-    var rows = await this.query(sql);
+  queryOne = async (sql:string, args?:any):Promise<any> => {
+    var rows = await this.query(sql,args);
     return rows[0];
   };
-  queryColumn = async (sql:string):Promise<any> => {
-    var rows:any[] = await this.query(sql);
+  queryColumn = async (sql:string, args?:any):Promise<any> => {
+    var rows:any[] = await this.query(sql, args);
     return rows.map(getOnlyField);
   };
-  queryValue = async (sql:string):Promise<any> => {
-    let col = await this.queryColumn(sql);
+  queryValue = async (sql:string, args?:any):Promise<any> => {
+    let col = await this.queryColumn(sql,args);
     return col[0];
   };
   outputResult = (res:express.Response, cont:any, status?:number):void => {
@@ -186,6 +187,12 @@ export class Rest {
   };
   handleDefault = async (req:express.Request):Promise<any> => {
     var table = req.params.table;
+    var id = req.params.id || null;
+    var query = req.query;
+    let checkMsg = checkInput([id, query.order_, query.start_, query.limit_, query.op_,table]);
+    if (checkMsg) {
+      return Promise.reject([checkMsg, 400]);
+    }
     let fs:any[] = await this.query('desc ' + table);
     var tableMeta = {};
     let pris = [];
@@ -200,20 +207,15 @@ export class Rest {
     if (pri) {
       tableMeta['id_'] = pri;
     }
-    var id = req.params.id || null;
-    var query = req.query;
-    var where = query.where_ || buildCond(id, query, tableMeta);
-    where = where && ' where ' + where || '';
-
+    let where = query.where_ ? {sql:query.where_, args:[]} : buildCond(id, query, tableMeta);
     if (req.method == 'GET') {
       let order = query.order_ ? " order by " + query.order_ : "";
-      let start = query.start_ || 0;
-      let limit = query.limit_ || 100;
-      let sql = "select * from " + table + where + order + " limit " + start + "," + limit;
+      let sql = `select * from ${table} where ${where.sql} ${order} limit ${query.start_||0}, ${query.limit_||100}`;
+      let args = [].concat(where.args);
       if (query.op_ == 'count') {
-        sql = "select count(1) a from "+table+where;
+        sql = `select count(1) a from ${table} where ${where}`;
       }
-      let rows:any[] = await this.query(sql);
+      let rows:any[] = await this.query(sql, args);
       if (id && rows.length == 0) {
         return Promise.reject(['', 404]);
       }
@@ -228,8 +230,8 @@ export class Rest {
       let jbody = req['jbody'];
       jbody.create_time = jbody.create_time || new Date()['format']();
       jbody.update_time = new Date()['format']();
-      let sql = buildUpdate(table, id, jbody, tableMeta, !!req.query.force);
-      let result:any = await this.query(sql);
+      let qr = buildUpdate(table, id, jbody, tableMeta, !!req.query.force);
+      let result:any = await this.query(qr.sql, qr.args);
       let nid = id || result.insertId;
       if (!nid) {
         return Promise.resolve(jbody);
@@ -300,20 +302,21 @@ function quoteValue(value, type) {
 
 function buildCond(id, query, table) {
   if (id) {
-    return " " + table.id_ + "=" + quoteValue(id, table[table.id_]);
+    return {sql: ` ${table.id_}=?`, args: [id]};
   }
   var cond = '';
+  let args = [];
   for (var f in table) {
     if (table.hasOwnProperty(f) && query.hasOwnProperty(f)) {
-      let qf = quoteValue(query[f], table[f]);
-      cond += ` and ${f}=${qf}`;
+      cond += ` and ${f}=?`;
+      args.push(query[f]);
     }
   }
-  return cond && cond.slice(4) || '';
+  return {sql: cond && cond.slice(4) || '', args: args};
 }
 
 function buildUpdate(tname, id, jbody, table, force) {
-  let fs = [], vs = [], sets = [];
+  let fs = [], vs = [], sets = [], args=[];
   if (id) { //把id加入update
     jbody[table.id_] = id;
   }
@@ -324,14 +327,12 @@ function buildUpdate(tname, id, jbody, table, force) {
         jbody[k] = new Date(jbody[k])['format']();
       }
       fs.push(k);
-      vs.push(quoteValue(jbody[k] || null, table[k]));
-      sets.push(`${k}=${quoteValue(typeof jbody[k] == 'undefined' ? null : jbody[k], table[k])}`);
+      vs.push('?');
+      sets.push(`${k}=?`);
+      args.push(jbody[k]);
     }
   }
-  let fs2 = fs.join(',');
-  let vs2 = vs.join(',');
-  let sets2 = sets.join(',');
-  return `insert into ${tname}(${fs2}) values(${vs2}) on duplicate key update ${sets2}`;
+  return {sql:`insert into ${tname}(${fs.join(',')}) values(${vs.join(',')}) on duplicate key update ${sets.join(',')}`,args:[].concat(args,args)};
 }
 
 function getOnlyField(obj) {
@@ -372,6 +373,16 @@ function outputError(err){
       if (l-1 in lns) console.log(`${l==line?'*':' '}${sl} ${lns[l-1]}`);
     }
   }
-  console.error(err.stack);
+  console.error(err.stack.split('\n').slice(0,5).join('\n'));
 }
 
+function checkInput(inputs) {
+  if (!_.isArray(inputs) && inputs && !/^[a-zA-z0-9_\s]+$/.test(inputs)) {
+    return `invalid input ${inputs}`;
+  }
+  for (let v of inputs) {
+    if (v && !/^[a-zA-z0-9_\s]+$/.test(v))
+      return `invalid input ${v}`;
+  }
+  return '';
+}
