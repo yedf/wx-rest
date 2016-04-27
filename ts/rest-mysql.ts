@@ -213,7 +213,7 @@ export class Rest {
       let sql = `select * from ${table} where ${where.sql} ${order} limit ${query.start_||0}, ${query.limit_||100}`;
       let args = [].concat(where.args);
       if (query.op_ == 'count') {
-        sql = `select count(1) a from ${table} where ${where}`;
+        sql = `select count(1) a from ${table} where ${where.sql}`;
       }
       let rows:any[] = await this.query(sql, args);
       if (id && rows.length == 0) {
@@ -312,7 +312,7 @@ function buildCond(id, query, table) {
       args.push(query[f]);
     }
   }
-  return {sql: cond && cond.slice(4) || '', args: args};
+  return {sql: cond && cond.slice(4) || ' 1=1 ', args: args};
 }
 
 function buildUpdate(tname, id, jbody, table, force) {
