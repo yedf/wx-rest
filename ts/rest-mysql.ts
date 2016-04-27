@@ -228,7 +228,10 @@ export class Rest {
       return Promise.resolve(r);
     } else if (req.method == 'POST') {
       let jbody = req['jbody'];
-      jbody.create_time = jbody.create_time || new Date()['format']();
+      // id is null then init create_time , otherwise not
+      if (!id){
+        jbody.create_time = jbody.create_time || new Date()['format']();
+      }
       jbody.update_time = new Date()['format']();
       let qr = buildUpdate(table, id, jbody, tableMeta, !!req.query.force);
       let result:any = await this.query(qr.sql, qr.args);
