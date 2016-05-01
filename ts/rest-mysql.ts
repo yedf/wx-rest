@@ -362,21 +362,27 @@ function addJbody(req) {
 }
 
 function outputError(err){
-  let reg = /\/(.*?):(.*?):.*?/;
+  console.error(err.stack.split('\n').slice(0,5).join('\n'));
+  let reg = /\/(.*?):(.*?):(\d+)/;
   let matches = err.stack.match(reg);
   if (matches) {
     let file = '/'+matches[1];
     let line = parseInt(matches[2]);
+    let column = parseInt(matches[3]);
     let lns = fs.readFileSync(file).toString('utf8').split('\n', 1000000);
     for(let l=line-4; l<line+5; l++) {
       let sl = l.toString();
       while (sl.length < 5) {
         sl = '0' + sl;
       }
-      if (l-1 in lns) console.log(`${l==line?'*':' '}${sl} ${lns[l-1]}`);
+      if (l-1 in lns) {
+        console.log(`${l == line ? '*' : ' '}${sl} ${lns[l - 1]}`);
+        if (l == line) {
+          console.log(Array(sl.length+column+2).join(' ') + '^');
+        }
+      }
     }
   }
-  console.error(err.stack.split('\n').slice(0,5).join('\n'));
 }
 
 function checkInput(inputs) {
