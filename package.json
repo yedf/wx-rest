@@ -49,6 +49,8 @@
         "js/",
         "hlp/",
         "ts/",
+        "tsconfig.json",
+        "tsd.json",
         "test/"
     ],
     "main": "js/index"

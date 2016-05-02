@@ -7,6 +7,8 @@ import * as fs from 'fs';
 var request = require('request');
 import * as express from 'express';
 import * as util from './util2';
+import * as qs from 'querystring';
+
 export class WxRest extends Rest {
   constructor(public config: any) {
     super(config);
@@ -17,14 +19,23 @@ export class WxRest extends Rest {
       res.redirect(url);
     })
     .get('/api/wx/oauth', async function(req, res) {
+      let query = req.query;
+      console.log('query1 is1:', query);
       let code = req.query.code;
       let state = req.query.state; //state=epeijing.cn/app/ /tab/try
       state = state.replace(' ', '#');
-      let tr:any = await util.jget(`https://api.weixin.qq.com/sns/oauth2/access_token?appid=${config.app_id}&secret=${config.app_secret}&grant_type=authorization_code&code=${code}`);
-      console.log(`oauth token. code: ${code} state: ${state} openid: ${tr.openid}`);
+      let conf = config;
+      if (query.app) {
+        conf = await that.queryOne(`select * from n_wx_apps where app='${query.app}'`);
+      }
+      let tr:any = await util.jget(`https://api.weixin.qq.com/sns/oauth2/access_token?appid=${conf.app_id}&secret=${conf.app_secret}&grant_type=authorization_code&code=${code}`);
+      console.log(`app: ${query.app} app_id: ${conf.app_id} oauth token. code: ${code} state: ${state} openid: ${tr.openid}`);
       let userinfo = await util.jget(`https://api.weixin.qq.com/sns/userinfo?access_token=${tr.access_token}&openid=${tr.openid}&lang=zh_CN`);
       let info = encodeURI(JSON.stringify(userinfo));
-      let url = `${state}?userinfo=${info}`;
+      delete query.code;
+      delete query.state;
+      let result = query.result || 'userinfo';
+      let url = `${state}?${result}=${info}&${qs.stringify(query)}`;
       console.log('url is', url);
       res.redirect(url);
       return Promise.resolve(true);
