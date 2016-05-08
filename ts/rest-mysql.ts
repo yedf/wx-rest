@@ -247,12 +247,12 @@ export class Rest {
       }
       return Promise.resolve(jbody);
     } else if (req.method == 'DELETE') {
-      if (!id && !where) {
+      if (!id && !where.sql) {
         return Promise.reject(['delete should specify condition', 400]);
       }
       let limit = query.limit_ || 1;
-      let sql = "delete from " + table + where + ' limit ' + limit;
-      let result:any = await this.query(sql);
+      let sql = `delete from ${table} where ${where.sql} limit ${limit}`;
+      let result:any = await this.query(sql, where.args);
       if (result.affectedRows == 0) {
         return Promise.reject(['', 404]);
       }
