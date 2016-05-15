@@ -199,7 +199,7 @@ export class Rest {
     for (let k = 0; k < fs.length; k++) {
       let f = fs[k];
       tableMeta[f.Field] = f.Type;
-      if (f.Key) {
+      if (f.Key == 'PRI') {
         pris.push(f.Field);
       }
     }
