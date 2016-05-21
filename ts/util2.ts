@@ -96,6 +96,14 @@ export function createNonceStr(length) {
   }
   return str;
 }
+export function createNonceLower(length) {
+  const chars = "abcdefghijklmnopqrstuvwxyz";
+  let str = "";
+  for (let i = 0; i < length; i++) {
+    str += chars.charAt(Math.floor(Math.random()*chars.length));
+  }
+  return str;
+}
 export function getTimeStamp(){
   return Math.floor(new Date().getTime()/1000);
 }
